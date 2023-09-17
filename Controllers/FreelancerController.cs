@@ -1,4 +1,5 @@
 ﻿using GetFreelancer_API.Data;
+using GetFreelancer_API.Interface;
 using GetFreelancer_API.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -11,23 +12,34 @@ namespace GetFreelancer_API.Controllers
     public class FreelancerController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IApiKeyValidation _apiKeyValidation;
 
-        public FreelancerController(ApplicationDbContext context)
+        public FreelancerController(ApplicationDbContext context, IApiKeyValidation apiKeyValidation)
         {
             _context = context;
+            _apiKeyValidation = apiKeyValidation;
         }
-        //get list of freelancers
+
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Freelancer>>> GetFreelancers()
         {
+            if (!Authorize())
+            {
+                return Unauthorized();
+            }
             return Ok(await _context.Freelancers.ToListAsync());
         }
-        //create freelancer
+
         [HttpPost]
         public async Task<ActionResult<Freelancer>> PostFreelancer(Freelancer freelancer)
         {
             try
             {
+                if (!Authorize())
+                {
+                    return Unauthorized();
+                }
                 var validationErrors = await ValidateFreelancerUniqueness(freelancer);
 
                 if (validationErrors.Count > 0)
@@ -52,6 +64,11 @@ namespace GetFreelancer_API.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<Freelancer>> DeleteFreelancer(int id)
         {
+            if (!Authorize())
+            {
+                return Unauthorized();
+            }
+
             var freelancer = await _context.Freelancers.FindAsync(id);
 
             if (freelancer == null)
@@ -68,12 +85,9 @@ namespace GetFreelancer_API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateFreelancer(int id, [FromBody] Freelancer updatedFreelancer)
         {
-
-            var validationErrors = await ValidateFreelancerUniqueness(updatedFreelancer);
-
-            if (validationErrors.Count > 0)
+            if (!Authorize())
             {
-                return BadRequest(validationErrors);
+                return Unauthorized();
             }
 
             var existingFreelancer = await _context.Freelancers.FindAsync(id);
@@ -101,6 +115,8 @@ namespace GetFreelancer_API.Controllers
                 return StatusCode(500, "Concurrency conflict while updating the freelancer.");
             }
         }
+
+        //vaidation
         private async Task<Dictionary<string, string>> ValidateFreelancerUniqueness(Freelancer freelancer)
 {
         var validationErrors = new Dictionary<string, string>();
@@ -124,6 +140,18 @@ namespace GetFreelancer_API.Controllers
         }
 
         return validationErrors;
+        }
+
+        //authorization
+        private bool Authorize()
+        {
+            string? apiKey = Request.Headers[Constants.ApiKeyHeaderName];
+            if (string.IsNullOrWhiteSpace(apiKey) || !_apiKeyValidation.IsValidApiKey(apiKey))
+            {
+                return false;
+            }
+
+            return true;
         }
 
     }

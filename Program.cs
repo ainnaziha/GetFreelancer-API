@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using GetFreelancer_API.Data;
+using GetFreelancer_API.Interface;
+using GetFreelancer_API;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +12,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlSer
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddTransient<IApiKeyValidation, ApiKeyValidation>();
 
 var app = builder.Build();
 
