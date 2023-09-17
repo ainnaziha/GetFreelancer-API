@@ -15,6 +15,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddTransient<IApiKeyValidation, ApiKeyValidation>();
 
+builder.Services.AddCors();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
