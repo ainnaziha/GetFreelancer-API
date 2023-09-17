@@ -16,7 +16,7 @@ namespace GetFreelancer_API
             if (string.IsNullOrWhiteSpace(userApiKey))
                 return false;
 
-            string? apiKey = _configuration.GetValue<string>(Constants.ApiKeyName);
+            string? apiKey = Environment.GetEnvironmentVariable("API_KEY");
 
             if (apiKey == null || apiKey != userApiKey)
                 return false;
